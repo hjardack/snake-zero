@@ -23,7 +23,7 @@ class SnakeGameEngine: ObservableObject {
     @Published var snake: [Point] = []
     @Published var food: Point = Point(x: 0, y: 0)
     @Published var score: Int = 0
-    @Published var highScore: Int = UserDefaults.standard.integer(forKey: "HighScore") // Load from storage
+    @Published var highScore: Int = UserDefaults.standard.integer(forKey: "HighScore")
     @Published var isGameOver: Bool = true
     @Published var isPaused: Bool = false
     @Published var direction: Direction = .right
@@ -51,7 +51,6 @@ class SnakeGameEngine: ObservableObject {
     }
     
     func changeDirection(_ newDirection: Direction) {
-        // Prevent changes while paused
         guard !isPaused else { return }
         
         // Prevent 180-degree turns
@@ -64,7 +63,6 @@ class SnakeGameEngine: ObservableObject {
     }
     
     private func moveSnake() {
-        // Stop movement if game over or paused
         guard !isGameOver, !isPaused else { return }
         
         guard let head = snake.first else { return }
@@ -114,7 +112,6 @@ class SnakeGameEngine: ObservableObject {
         isGameOver = true
         timer?.invalidate()
         
-        // Save High Score
         if score > highScore {
             highScore = score
             UserDefaults.standard.set(highScore, forKey: "HighScore")
@@ -149,7 +146,7 @@ struct ContentView: View {
                     
                     Spacer()
                     
-                    // Pause Button (Only visible while playing)
+                    // Pause Button
                     if !game.isGameOver {
                         Button(action: {
                             game.togglePause()
@@ -219,23 +216,9 @@ struct ContentView: View {
                 .background(Color.black)
                 .border(Color.white, width: 2)
                 .padding()
-                .gesture(
-                    DragGesture(minimumDistance: 20, coordinateSpace: .local)
-                        .onEnded { value in
-                            guard !game.isPaused else { return } // No movement if paused
-                            
-                            let horizontalAmount = value.translation.width
-                            let verticalAmount = value.translation.height
-                            
-                            if abs(horizontalAmount) > abs(verticalAmount) {
-                                game.changeDirection(horizontalAmount < 0 ? .left : .right)
-                            } else {
-                                game.changeDirection(verticalAmount < 0 ? .up : .down)
-                            }
-                        }
-                )
+                // NOTE: Gesture was removed from here
                 
-                // Game Over / Start Controls
+                // Controls / Game Over
                 if game.isGameOver {
                     Button(action: {
                         game.startGame()
@@ -257,6 +240,23 @@ struct ContentView: View {
                 Spacer()
             }
         }
+        // NOTE: Gesture is now applied to the entire ZStack (Full Screen)
+        .contentShape(Rectangle()) // Ensures empty areas are tappable
+        .gesture(
+            DragGesture(minimumDistance: 20, coordinateSpace: .local)
+                .onEnded { value in
+                    guard !game.isPaused else { return }
+                    
+                    let horizontalAmount = value.translation.width
+                    let verticalAmount = value.translation.height
+                    
+                    if abs(horizontalAmount) > abs(verticalAmount) {
+                        game.changeDirection(horizontalAmount < 0 ? .left : .right)
+                    } else {
+                        game.changeDirection(verticalAmount < 0 ? .up : .down)
+                    }
+                }
+        )
     }
 }
 
